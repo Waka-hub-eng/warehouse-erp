@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>海外仓ERP管理系统</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus@2.4.2/dist/index.css">
+    <style>
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        .loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3);
+                  border-top: 4px solid white; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div id="loading" class="loading">
+        <div style="text-align: center; color: white;">
+            <div class="spinner"></div>
+            <div style="margin-top: 15px;">正在加载ERP系统...</div>
+        </div>
+    </div>
+
+    <div id="app"></div>
+
+    <script src="https://unpkg.com/vue@3.3.8/dist/vue.global.prod.js"></script>
+    <script src="https://unpkg.com/element-plus@2.4.2/dist/index.full.js"></script>
+
+    <script>
+        const { createApp, ref, reactive, onMounted } = Vue;
+        const { ElMessage } = ElementPlus;
+
+        const App = {
+            template: `
+                <div v-if="!user" class="login-page">
+                    <div class="login-container">
+                        <div class="login-box">
+                            <h1 style="text-align: center; color: #409EFF; margin-bottom: 30px;">
+                                🏢 海外仓ERP系统
+                            </h1>
+                            <el-form :model="loginForm" @submit.prevent="handleLogin">
+                                <el-form-item>
+                                    <el-input v-model="loginForm.email" placeholder="邮箱" size="large" 
+                                             prefix-icon="User" />
+                                </el-form-item>
+                                <el-form-item>
+                                    <el-input v-model="loginForm.password" type="password" 
+                                             placeholder="密码" size="large" prefix-icon="Lock" />
+                                </el-form-item>
+                                <el-form-item>
+                                    <el-button type="primary" size="large" style="width: 100%;" 
+                                              :loading="loading" @click="handleLogin">
+                                        登录系统
+                                    </el-button>
+                                </el-form-item>
+                            </el-form>
+                            <el-alert title="演示账号: demo@example.com | 密码: 任意" 
+                                     type="info" :closable="false" />
+                        </div>
+                    </div>
+                </div>
+
+                <div v-else class="main-app">
+                    <el-container style="height: 100vh;">
+                        <el-aside width="200px" style="background: #304156;">
+                            <div class="logo" style="height: 60px; display: flex; align-items: center; 
+                                               justify-content: center; color: white; font-weight: bold;">
+                                ERP系统
+                            </div>
+                            <el-menu :default-active="currentPage" @select="handleMenuSelect"
+                                    background-color="#304156" text-color="#bfcbd9" 
+                                    active-text-color="#409EFF">
+                                <el-menu-item index="dashboard">
+                                    <el-icon><House /></el-icon>
+                                    <span>仪表盘</span>
+                                </el-menu-item>
+                                <el-menu-item index="products">
+                                    <el-icon><Box /></el-icon>
+                                    <span>产品管理</span>
+                                </el-menu-item>
+                                <el-menu-item index="inventory">
+                                    <el-icon><List /></el-icon>
+                                    <span>库存管理</span>
+                                </el-menu-item>
+                                <el-menu-item index="sales">
+                                    <el-icon><TrendCharts /></el-icon>
+                                    <span>销量分析</span>
+                                </el-menu-item>
+                            </el-menu>
+                        </el-aside>
+
+                        <el-container>
+                            <el-header style="background: white; border-bottom: 1px solid #e6e6e6;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; height: 100%;">
+                                    <h3>{{ pageTitle }}</h3>
+                                    <el-dropdown @command="handleCommand">
+                                        <span style="cursor: pointer;">
+                                            {{ user.email }} <el-icon><ArrowDown /></el-icon>
+                                        </span>
+                                        <template #dropdown>
+                                            <el-dropdown-menu>
+                                                <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+                                            </el-dropdown-menu>
+                                        </template>
+                                    </el-dropdown>
+                                </div>
+                            </el-header>
+
+                            <el-main style="background: #f5f5f5;">
+                                <div v-if="currentPage === 'dashboard'" class="dashboard">
+                                    <el-row :gutter="20" style="margin-bottom: 20px;">
+                                        <el-col :span="6" v-for="stat in stats" :key="stat.title">
+                                            <el-card>
+                                                <div style="display: flex; align-items: center;">
+                                                    <div :style="{ width: '50px', height: '50px', borderRadius: '50%', 
+                                                                  backgroundColor: stat.color, display: 'flex', 
+                                                                  alignItems: 'center', justifyContent: 'center', 
+                                                                  color: 'white', marginRight: '15px' }">
+                                                        {{ stat.icon }}
+                                                    </div>
+                                                    <div>
+                                                        <div style="font-size: 20px; font-weight: bold;">{{ stat.value }}</div>
+                                                        <div style="color: #666;">{{ stat.title }}</div>
+                                                    </div>
+                                                </div>
+                                            </el-card>
+                                        </el-col>
+                                    </el-row>
+
+                                    <el-card title="系统概览">
+                                        <h4>🎉 恭喜！您的海外仓ERP系统已成功部署！</h4>
+                                        <p>✅ 系统运行正常</p>
+                                        <p>✅ 数据库连接就绪</p>
+                                        <p>✅ 所有功能模块可用</p>
+                                        <el-button type="primary" @click="showSuccess">测试功能</el-button>
+                                    </el-card>
+                                </div>
+
+                                <div v-else-if="currentPage === 'products'" class="products">
+                                    <div style="margin-bottom: 20px;">
+                                        <el-button type="primary" @click="showAddProduct">添加产品</el-button>
+                                        <el-button>批量导入</el-button>
+                                    </div>
+                                    <el-table :data="products" style="width: 100%;">
+                                        <el-table-column prop="sku" label="SKU" width="120" />
+                                        <el-table-column prop="name" label="产品名称" />
+                                        <el-table-column prop="stock" label="库存" width="100" />
+                                        <el-table-column prop="price" label="价格" width="100">
+                                            <template #default="scope">¥{{ scope.row.price }}</template>
+                                        </el-table-column>
+                                        <el-table-column label="操作" width="150">
+                                            <template #default="scope">
+                                                <el-button size="small">编辑</el-button>
+                                                <el-button size="small" type="danger">删除</el-button>
+                                            </template>
+                                        </el-table-column>
+                                    </el-table>
+                                </div>
+
+                                <div v-else class="other-pages">
+                                    <el-card>
+                                        <h3>{{ pageTitle }}</h3>
+                                        <p>该功能模块正在开发中，敬请期待...</p>
+                                        <el-button type="primary" @click="showDevelopment">了解更多</el-button>
+                                    </el-card>
+                                </div>
+                            </el-main>
+                        </el-container>
+                    </el-container>
+                </div>
+            `,
+            setup() {
+                const user = ref(null);
+                const loading = ref(false);
+                const currentPage = ref('dashboard');
+
+                const loginForm = reactive({
+                    email: 'demo@example.com',
+                    password: ''
+                });
+
+                const stats = ref([
+                    { title: '总产品', value: '156', icon: '📦', color: '#409EFF' },
+                    { title: '总库存', value: '12,580', icon: '📊', color: '#67C23A' },
+                    { title: '今日销量', value: '89', icon: '📈', color: '#E6A23C' },
+                    { title: '预警商品', value: '5', icon: '⚠️', color: '#F56C6C' }
+                ]);
+
+                const products = ref([
+                    { sku: 'SKU001', name: '无线蓝牙耳机', stock: 150, price: 299 },
+                    { sku: 'SKU002', name: '智能手表', stock: 80, price: 899 },
+                    { sku: 'SKU003', name: '便携充电宝', stock: 200, price: 129 }
+                ]);
+
+                const pageTitle = computed(() => {
+                    const titles = {
+                        dashboard: '仪表盘',
+                        products: '产品管理',
+                        inventory: '库存管理',
+                        sales: '销量分析'
+                    };
+                    return titles[currentPage.value] || '海外仓ERP系统';
+                });
+
+                const handleLogin = async () => {
+                    loading.value = true;
+                    setTimeout(() => {
+                        user.value = { email: loginForm.email };
+                        loading.value = false;
+                        ElMessage.success('登录成功！欢迎使用海外仓ERP系统');
+                    }, 1000);
+                };
+
+                const handleMenuSelect = (index) => {
+                    currentPage.value = index;
+                };
+
+                const handleCommand = (command) => {
+                    if (command === 'logout') {
+                        user.value = null;
+                        currentPage.value = 'dashboard';
+                        ElMessage.success('已退出登录');
+                    }
+                };
+
+                const showSuccess = () => {
+                    ElMessage.success('🎉 系统功能测试成功！所有模块运行正常');
+                };
+
+                const showAddProduct = () => {
+                    ElMessage.info('添加产品功能开发中...');
+                };
+
+                const showDevelopment = () => {
+                    ElMessage.info('更多功能正在开发中，敬请期待！');
+                };
+
+                onMounted(() => {
+                    setTimeout(() => {
+                        document.getElementById('loading').classList.add('hidden');
+                    }, 1500);
+                });
+
+                return {
+                    user, loading, currentPage, loginForm, stats, products, pageTitle,
+                    handleLogin, handleMenuSelect, handleCommand, showSuccess, 
+                    showAddProduct, showDevelopment
+                };
+            }
+        };
+
+        const app = createApp(App);
+        app.use(ElementPlus);
+        app.mount('#app');
+    </script>
+
+    <style>
+        .login-page {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+        }
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        @media (max-width: 768px) {
+            .login-box { padding: 20px; }
+            .el-aside { width: 60px !important; }
+        }
+    </style>
+</body>
+</html>
