@@ -1,0 +1,2353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>海外仓ERP管理系统 - 增强版</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏢</text></svg>">
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            /* 浅色主题 */
+            --primary-color: #409EFF;
+            --success-color: #67C23A;
+            --warning-color: #E6A23C;
+            --danger-color: #F56C6C;
+            --info-color: #909399;
+            
+            --bg-color: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-color: #303133;
+            --text-secondary: #606266;
+            --border-color: #DCDFE6;
+            --sidebar-bg: #304156;
+            --sidebar-text: #bfcbd9;
+            
+            /* 间距 */
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+            
+            /* 圆角 */
+            --border-radius: 6px;
+            --border-radius-lg: 12px;
+            
+            /* 阴影 */
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.2);
+        }
+        
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --text-color: #ffffff;
+            --text-secondary: #cccccc;
+            --border-color: #404040;
+            --sidebar-bg: #1f1f1f;
+            --sidebar-text: #cccccc;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+        
+        /* 登录页面样式 */
+        .login-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: var(--spacing-lg);
+        }
+        
+        .login-box {
+            background: var(--card-bg);
+            padding: var(--spacing-xl);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 400px;
+            animation: slideUp 0.5s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .login-header h1 {
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-sm);
+            font-size: 28px;
+            font-weight: 600;
+        }
+        
+        .login-header p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: var(--spacing-sm);
+            color: var(--text-color);
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px var(--spacing-md);
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: var(--card-bg);
+            color: var(--text-color);
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px var(--spacing-lg);
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            gap: var(--spacing-sm);
+        }
+        
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #337ecc;
+            transform: translateY(-1px);
+        }
+        
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: var(--warning-color);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: var(--info-color);
+            color: white;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-full {
+            width: 100%;
+        }
+        
+        /* 主应用布局 */
+        .app-container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .sidebar.collapsed {
+            width: 70px;
+        }
+        
+        .logo {
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            gap: var(--spacing-sm);
+        }
+        
+        .logo-text {
+            transition: opacity 0.3s ease;
+        }
+        
+        .sidebar.collapsed .logo-text {
+            opacity: 0;
+        }
+        
+        .nav-menu {
+            flex: 1;
+            padding: var(--spacing-md) 0;
+            overflow-y: auto;
+        }
+        
+        .nav-item {
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md) var(--spacing-lg);
+            color: var(--sidebar-text);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            gap: var(--spacing-md);
+            position: relative;
+        }
+        
+        .nav-link:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        
+        .nav-link.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .nav-link.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: white;
+        }
+        
+        .nav-icon {
+            font-size: 20px;
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        
+        .nav-text {
+            transition: opacity 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        .sidebar.collapsed .nav-text {
+            opacity: 0;
+        }
+        
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .header {
+            height: 70px;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+        
+        .toggle-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: var(--spacing-sm);
+            border-radius: var(--border-radius);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-btn:hover {
+            background: var(--bg-color);
+        }
+        
+        .page-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+        
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: var(--spacing-sm);
+            border-radius: var(--border-radius);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+        
+        .theme-toggle:hover {
+            background: var(--bg-color);
+        }
+        
+        .user-menu {
+            position: relative;
+            cursor: pointer;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+        
+        .user-menu:hover {
+            background: var(--bg-color);
+        }
+        
+        /* 内容区域 */
+        .content {
+            flex: 1;
+            padding: var(--spacing-lg);
+            overflow-y: auto;
+            background: var(--bg-color);
+        }
+        
+        /* 卡片组件 */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--spacing-lg);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: var(--shadow-md);
+        }
+        
+        .card-header {
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .card-body {
+            padding: var(--spacing-lg);
+        }
+        
+        /* 统计卡片网格 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .stat-card {
+            background: var(--card-bg);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            flex-shrink: 0;
+        }
+        
+        .stat-info {
+            flex: 1;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .stat-change {
+            font-size: 12px;
+            margin-top: var(--spacing-xs);
+        }
+        
+        .stat-change.positive {
+            color: var(--success-color);
+        }
+        
+        .stat-change.negative {
+            color: var(--danger-color);
+        }
+        
+        /* 表格样式 */
+        .table-container {
+            overflow-x: auto;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+        }
+        
+        .table th,
+        .table td {
+            padding: var(--spacing-md);
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .table th {
+            background: var(--bg-color);
+            font-weight: 600;
+            color: var(--text-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .table tr:hover {
+            background: var(--bg-color);
+        }
+        
+        .table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        /* 工具栏 */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-lg);
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+        }
+        
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            flex-wrap: wrap;
+        }
+        
+        .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+        
+        /* 搜索框 */
+        .search-box {
+            position: relative;
+            min-width: 250px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 10px var(--spacing-md) 10px 40px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            background: var(--card-bg);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+        
+        /* 筛选器 */
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+        
+        .filter-select {
+            padding: 8px var(--spacing-md);
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-size: 14px;
+        }
+        
+        /* 模态框 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal {
+            background: var(--card-bg);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-lg);
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: all 0.3s ease;
+        }
+        
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+        
+        .modal-header {
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: var(--spacing-xs);
+        }
+        
+        .modal-body {
+            padding: var(--spacing-lg);
+        }
+        
+        .modal-footer {
+            padding: var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--spacing-md);
+        }
+        
+        /* 表单样式 */
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .form-group {
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: var(--spacing-sm);
+            font-weight: 500;
+            color: var(--text-color);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px var(--spacing-md);
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            background: var(--card-bg);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        /* 通知系统 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-radius: var(--border-radius);
+            color: white;
+            font-size: 14px;
+            z-index: 9999;
+            max-width: 350px;
+            box-shadow: var(--shadow-md);
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            background: var(--success-color);
+        }
+        
+        .notification.error {
+            background: var(--danger-color);
+        }
+        
+        .notification.warning {
+            background: var(--warning-color);
+        }
+        
+        .notification.info {
+            background: var(--primary-color);
+        }
+        
+        /* 加载动画 */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 徽章 */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 12px;
+            color: white;
+        }
+        
+        .badge-success {
+            background: var(--success-color);
+        }
+        
+        .badge-warning {
+            background: var(--warning-color);
+        }
+        
+        .badge-danger {
+            background: var(--danger-color);
+        }
+        
+        .badge-info {
+            background: var(--info-color);
+        }
+        
+        /* 工具提示 */
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+        
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius);
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .tooltip:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+            }
+            
+            .sidebar .nav-text,
+            .sidebar .logo-text {
+                display: none;
+            }
+            
+            .content {
+                padding: var(--spacing-md);
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-box {
+                min-width: auto;
+            }
+            
+            .modal {
+                margin: var(--spacing-md);
+                max-width: calc(100vw - 32px);
+            }
+        }
+        
+        /* 隐藏类 */
+        .hidden {
+            display: none !important;
+        }
+        
+        /* 页面切换动画 */
+        .page {
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* 图表容器 */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: var(--spacing-md) 0;
+        }
+        
+        /* 文件上传区域 */
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-xl);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background: rgba(64, 158, 255, 0.05);
+        }
+        
+        .upload-area.dragover {
+            border-color: var(--primary-color);
+            background: rgba(64, 158, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 登录页面 -->
+        <div id="loginPage" class="login-container">
+            <div class="login-box">
+                <div class="login-header">
+                    <h1>🏢 海外仓ERP系统</h1>
+                    <p>专业的库存管理解决方案 - 增强版</p>
+                </div>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email" class="form-label">邮箱地址</label>
+                        <input type="email" id="email" class="form-input" value="admin@warehouse.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password" class="form-label">密码</label>
+                        <input type="password" id="password" class="form-input" value="admin123" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full" id="loginBtn">
+                        <span id="loginText">登录系统</span>
+                        <span id="loginLoading" class="loading hidden"></span>
+                    </button>
+                </form>
+                <div style="margin-top: 20px; padding: 15px; background: rgba(64, 158, 255, 0.1); border-radius: 6px; font-size: 14px;">
+                    <strong>🎯 增强版功能</strong><br>
+                    • 完整的产品和库存管理<br>
+                    • 智能数据分析和图表<br>
+                    • 本地数据存储和导入导出<br>
+                    • 深色主题和多语言支持
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主应用 -->
+        <div id="mainApp" class="app-container hidden">
+            <!-- 侧边栏 -->
+            <div class="sidebar" id="sidebar">
+                <div class="logo">
+                    <span class="nav-icon">🏢</span>
+                    <span class="logo-text">ERP系统</span>
+                </div>
+                <nav class="nav-menu">
+                    <div class="nav-item">
+                        <a class="nav-link active" data-page="dashboard">
+                            <span class="nav-icon">📊</span>
+                            <span class="nav-text">仪表盘</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a class="nav-link" data-page="products">
+                            <span class="nav-icon">📦</span>
+                            <span class="nav-text">产品管理</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a class="nav-link" data-page="inventory">
+                            <span class="nav-icon">📋</span>
+                            <span class="nav-text">库存管理</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a class="nav-link" data-page="sales">
+                            <span class="nav-icon">📈</span>
+                            <span class="nav-text">销量分析</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a class="nav-link" data-page="suppliers">
+                            <span class="nav-icon">🏢</span>
+                            <span class="nav-text">供应商</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a class="nav-link" data-page="orders">
+                            <span class="nav-icon">📄</span>
+                            <span class="nav-text">采购订单</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a class="nav-link" data-page="settings">
+                            <span class="nav-icon">⚙️</span>
+                            <span class="nav-text">系统设置</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+            
+            <!-- 主内容区 -->
+            <div class="main-content">
+                <!-- 头部 -->
+                <header class="header">
+                    <div class="header-left">
+                        <button class="toggle-btn" id="toggleBtn">☰</button>
+                        <h1 class="page-title" id="pageTitle">仪表盘</h1>
+                    </div>
+                    <div class="header-right">
+                        <button class="theme-toggle" id="themeToggle" data-tooltip="切换主题">🌙</button>
+                        <div class="user-menu" onclick="showUserMenu()">
+                            <span id="userName">admin@warehouse.com</span>
+                            <span>👤</span>
+                        </div>
+                    </div>
+                </header>
+                
+                <!-- 内容区域 -->
+                <main class="content" id="content">
+                    <!-- 仪表盘页面 -->
+                    <div id="dashboardPage" class="page">
+                        <!-- 统计卡片 -->
+                        <div class="stats-grid">
+                            <div class="stat-card" onclick="switchPage('products')">
+                                <div class="stat-icon" style="background: var(--primary-color);">📦</div>
+                                <div class="stat-info">
+                                    <div class="stat-value" id="totalProducts">0</div>
+                                    <div class="stat-label">总产品数</div>
+                                    <div class="stat-change positive">+12 本月新增</div>
+                                </div>
+                            </div>
+                            <div class="stat-card" onclick="switchPage('inventory')">
+                                <div class="stat-icon" style="background: var(--success-color);">📊</div>
+                                <div class="stat-info">
+                                    <div class="stat-value" id="totalInventory">0</div>
+                                    <div class="stat-label">总库存</div>
+                                    <div class="stat-change negative">-5% 较上月</div>
+                                </div>
+                            </div>
+                            <div class="stat-card" onclick="switchPage('sales')">
+                                <div class="stat-icon" style="background: var(--warning-color);">📈</div>
+                                <div class="stat-info">
+                                    <div class="stat-value" id="todaySales">0</div>
+                                    <div class="stat-label">今日销量</div>
+                                    <div class="stat-change positive">+18% 较昨日</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: var(--danger-color);">⚠️</div>
+                                <div class="stat-info">
+                                    <div class="stat-value" id="lowStockItems">0</div>
+                                    <div class="stat-label">预警商品</div>
+                                    <div class="stat-change">需要补货</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 图表区域 -->
+                        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--spacing-lg); margin-bottom: var(--spacing-lg);">
+                            <div class="card">
+                                <div class="card-header">
+                                    <span>📈 销量趋势</span>
+                                    <select id="salesPeriod" class="filter-select">
+                                        <option value="7">最近7天</option>
+                                        <option value="30">最近30天</option>
+                                        <option value="90">最近90天</option>
+                                    </select>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="salesChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <div class="card-header">🔥 热销产品</div>
+                                <div class="card-body">
+                                    <div id="topProducts"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 快速操作 -->
+                        <div class="card">
+                            <div class="card-header">⚡ 快速操作</div>
+                            <div class="card-body">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-md);">
+                                    <button class="btn btn-primary" onclick="showAddProductModal()">
+                                        ➕ 添加产品
+                                    </button>
+                                    <button class="btn btn-success" onclick="showImportModal()">
+                                        📥 导入数据
+                                    </button>
+                                    <button class="btn btn-warning" onclick="exportData()">
+                                        📤 导出报表
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="showInventoryCheck()">
+                                        🔍 库存盘点
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 产品管理页面 -->
+                    <div id="productsPage" class="page hidden">
+                        <div class="toolbar">
+                            <div class="toolbar-left">
+                                <button class="btn btn-primary" onclick="showAddProductModal()">
+                                    ➕ 添加产品
+                                </button>
+                                <button class="btn btn-success" onclick="showImportModal()">
+                                    📥 批量导入
+                                </button>
+                                <button class="btn btn-warning" onclick="exportProducts()">
+                                    📤 导出产品
+                                </button>
+                            </div>
+                            <div class="toolbar-right">
+                                <div class="search-box">
+                                    <span class="search-icon">🔍</span>
+                                    <input type="text" class="search-input" placeholder="搜索产品..." id="productSearch">
+                                </div>
+                                <div class="filter-group">
+                                    <select class="filter-select" id="categoryFilter">
+                                        <option value="">所有分类</option>
+                                        <option value="电子产品">电子产品</option>
+                                        <option value="服装">服装</option>
+                                        <option value="家居">家居</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <span>产品列表</span>
+                                <span id="productCount" class="badge badge-info">0 个产品</span>
+                            </div>
+                            <div class="card-body" style="padding: 0;">
+                                <div class="table-container">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>SKU</th>
+                                                <th>产品名称</th>
+                                                <th>分类</th>
+                                                <th>库存</th>
+                                                <th>价格</th>
+                                                <th>状态</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="productsTableBody">
+                                            <!-- 产品数据将在这里动态生成 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 库存管理页面 -->
+                    <div id="inventoryPage" class="page hidden">
+                        <div class="toolbar">
+                            <div class="toolbar-left">
+                                <button class="btn btn-primary" onclick="showStockAdjustModal()">
+                                    📝 库存调整
+                                </button>
+                                <button class="btn btn-warning" onclick="showLowStockReport()">
+                                    ⚠️ 库存预警
+                                </button>
+                            </div>
+                            <div class="toolbar-right">
+                                <div class="search-box">
+                                    <span class="search-icon">🔍</span>
+                                    <input type="text" class="search-input" placeholder="搜索库存..." id="inventorySearch">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">库存概览</div>
+                            <div class="card-body" style="padding: 0;">
+                                <div class="table-container">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>产品</th>
+                                                <th>当前库存</th>
+                                                <th>安全库存</th>
+                                                <th>在途库存</th>
+                                                <th>库存状态</th>
+                                                <th>最后更新</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="inventoryTableBody">
+                                            <!-- 库存数据将在这里动态生成 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 销量分析页面 -->
+                    <div id="salesPage" class="page hidden">
+                        <div class="card">
+                            <div class="card-header">📊 销量分析</div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="salesAnalysisChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 供应商管理页面 -->
+                    <div id="suppliersPage" class="page hidden">
+                        <div class="toolbar">
+                            <div class="toolbar-left">
+                                <button class="btn btn-primary" onclick="showAddSupplierModal()">
+                                    ➕ 添加供应商
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">供应商列表</div>
+                            <div class="card-body">
+                                <p>供应商管理功能开发中...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 采购订单页面 -->
+                    <div id="ordersPage" class="page hidden">
+                        <div class="toolbar">
+                            <div class="toolbar-left">
+                                <button class="btn btn-primary" onclick="showCreateOrderModal()">
+                                    ➕ 创建订单
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">采购订单</div>
+                            <div class="card-body">
+                                <p>采购订单功能开发中...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 系统设置页面 -->
+                    <div id="settingsPage" class="page hidden">
+                        <div class="card">
+                            <div class="card-header">⚙️ 系统设置</div>
+                            <div class="card-body">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">系统语言</label>
+                                        <select class="form-control" id="languageSelect">
+                                            <option value="zh-CN">简体中文</option>
+                                            <option value="en-US">English</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">主题模式</label>
+                                        <select class="form-control" id="themeSelect">
+                                            <option value="light">浅色主题</option>
+                                            <option value="dark">深色主题</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <button class="btn btn-primary" onclick="saveSettings()">保存设置</button>
+                                    <button class="btn btn-warning" onclick="exportAllData()">导出所有数据</button>
+                                    <button class="btn btn-danger" onclick="clearAllData()">清空所有数据</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 添加产品模态框 -->
+    <div id="addProductModal" class="modal-overlay">
+        <div class="modal" style="width: 600px;">
+            <div class="modal-header">
+                <h3 class="modal-title">添加产品</h3>
+                <button class="modal-close" onclick="closeModal('addProductModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addProductForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">SKU *</label>
+                            <input type="text" class="form-control" name="sku" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">产品名称 *</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">分类</label>
+                            <select class="form-control" name="category">
+                                <option value="电子产品">电子产品</option>
+                                <option value="服装">服装</option>
+                                <option value="家居">家居</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">价格</label>
+                            <input type="number" class="form-control" name="price" step="0.01">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">初始库存</label>
+                            <input type="number" class="form-control" name="stock" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">安全库存</label>
+                            <input type="number" class="form-control" name="safeStock" value="10">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">描述</label>
+                        <textarea class="form-control" name="description" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('addProductModal')">取消</button>
+                <button class="btn btn-primary" onclick="addProduct()">添加产品</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 数据导入模态框 -->
+    <div id="importModal" class="modal-overlay">
+        <div class="modal" style="width: 500px;">
+            <div class="modal-header">
+                <h3 class="modal-title">数据导入</h3>
+                <button class="modal-close" onclick="closeModal('importModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-area" id="uploadArea">
+                    <div style="font-size: 48px; margin-bottom: 16px;">📁</div>
+                    <p>拖拽CSV文件到此处，或点击选择文件</p>
+                    <input type="file" id="fileInput" accept=".csv" style="display: none;">
+                    <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                        选择文件
+                    </button>
+                </div>
+                <div id="importPreview" class="hidden" style="margin-top: 20px;">
+                    <h4>数据预览</h4>
+                    <div id="previewTable"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('importModal')">取消</button>
+                <button class="btn btn-primary" id="confirmImport" onclick="confirmImport()" disabled>确认导入</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentUser = null;
+        let currentPage = 'dashboard';
+        let sidebarCollapsed = false;
+        let currentTheme = 'light';
+        let currentLanguage = 'zh-CN';
+        
+        // 数据存储
+        let products = [];
+        let inventory = [];
+        let sales = [];
+        let suppliers = [];
+        let orders = [];
+        
+        // 页面标题映射
+        const pageTitles = {
+            dashboard: '仪表盘',
+            products: '产品管理',
+            inventory: '库存管理',
+            sales: '销量分析',
+            suppliers: '供应商管理',
+            orders: '采购订单',
+            settings: '系统设置'
+        };
+        
+        // 图表实例
+        let salesChart = null;
+        let salesAnalysisChart = null;
+        
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+        
+        function initializeApp() {
+            // 加载保存的数据
+            loadData();
+            
+            // 加载设置
+            loadSettings();
+            
+            // 绑定事件
+            bindEvents();
+            
+            // 初始化图表
+            initCharts();
+            
+            console.log('🚀 海外仓ERP系统增强版初始化完成');
+        }
+        
+        function bindEvents() {
+            // 登录表单
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            
+            // 侧边栏切换
+            document.getElementById('toggleBtn').addEventListener('click', toggleSidebar);
+            
+            // 主题切换
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+            
+            // 导航菜单
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = this.getAttribute('data-page');
+                    if (page) {
+                        switchPage(page);
+                    }
+                });
+            });
+            
+            // 搜索功能
+            document.getElementById('productSearch')?.addEventListener('input', filterProducts);
+            document.getElementById('inventorySearch')?.addEventListener('input', filterInventory);
+            
+            // 筛选功能
+            document.getElementById('categoryFilter')?.addEventListener('change', filterProducts);
+            document.getElementById('salesPeriod')?.addEventListener('change', updateSalesChart);
+            
+            // 文件上传
+            const fileInput = document.getElementById('fileInput');
+            const uploadArea = document.getElementById('uploadArea');
+            
+            if (fileInput && uploadArea) {
+                fileInput.addEventListener('change', handleFileSelect);
+                
+                uploadArea.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.classList.add('dragover');
+                });
+                
+                uploadArea.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+                });
+                
+                uploadArea.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        handleFile(files[0]);
+                    }
+                });
+            }
+        }
+        
+        // 登录处理
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const loginText = document.getElementById('loginText');
+            const loginLoading = document.getElementById('loginLoading');
+            
+            // 显示加载状态
+            loginBtn.disabled = true;
+            loginText.classList.add('hidden');
+            loginLoading.classList.remove('hidden');
+            
+            // 模拟登录延迟
+            setTimeout(() => {
+                currentUser = { email: email, name: email.split('@')[0] };
+                document.getElementById('userName').textContent = email;
+                
+                // 隐藏登录页面，显示主应用
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                
+                // 重置登录按钮状态
+                loginBtn.disabled = false;
+                loginText.classList.remove('hidden');
+                loginLoading.classList.add('hidden');
+                
+                // 初始化数据
+                initializeData();
+                
+                showNotification('登录成功！欢迎使用海外仓ERP系统增强版', 'success');
+            }, 1500);
+        }
+        
+        // 初始化演示数据
+        function initializeData() {
+            if (products.length === 0) {
+                products = [
+                    {
+                        id: 1,
+                        sku: 'SKU001',
+                        name: '无线蓝牙耳机',
+                        category: '电子产品',
+                        price: 299,
+                        stock: 150,
+                        safeStock: 20,
+                        status: 'active',
+                        description: '高品质无线蓝牙耳机，支持降噪功能'
+                    },
+                    {
+                        id: 2,
+                        sku: 'SKU002',
+                        name: '智能手表',
+                        category: '电子产品',
+                        price: 899,
+                        stock: 80,
+                        safeStock: 15,
+                        status: 'active',
+                        description: '多功能智能手表，支持健康监测'
+                    },
+                    {
+                        id: 3,
+                        sku: 'SKU003',
+                        name: '便携充电宝',
+                        category: '电子产品',
+                        price: 129,
+                        stock: 200,
+                        safeStock: 30,
+                        status: 'active',
+                        description: '大容量便携充电宝，快充技术'
+                    },
+                    {
+                        id: 4,
+                        sku: 'SKU004',
+                        name: '运动T恤',
+                        category: '服装',
+                        price: 89,
+                        stock: 5,
+                        safeStock: 25,
+                        status: 'low_stock',
+                        description: '透气运动T恤，多种颜色可选'
+                    },
+                    {
+                        id: 5,
+                        sku: 'SKU005',
+                        name: '咖啡杯',
+                        category: '家居',
+                        price: 45,
+                        stock: 120,
+                        safeStock: 20,
+                        status: 'active',
+                        description: '陶瓷咖啡杯，保温效果好'
+                    }
+                ];
+                
+                // 生成销量数据
+                sales = generateSalesData();
+                
+                // 保存数据
+                saveData();
+            }
+            
+            // 更新界面
+            updateDashboard();
+            updateProductsTable();
+            updateInventoryTable();
+            updateSalesChart();
+        }
+        
+        // 生成销量数据
+        function generateSalesData() {
+            const salesData = [];
+            const today = new Date();
+            
+            for (let i = 30; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                
+                products.forEach(product => {
+                    const quantity = Math.floor(Math.random() * 20) + 1;
+                    salesData.push({
+                        id: Date.now() + Math.random(),
+                        date: date.toISOString().split('T')[0],
+                        productId: product.id,
+                        productName: product.name,
+                        quantity: quantity,
+                        revenue: quantity * product.price
+                    });
+                });
+            }
+            
+            return salesData;
+        }
+        
+        // 更新仪表盘
+        function updateDashboard() {
+            // 更新统计数据
+            document.getElementById('totalProducts').textContent = products.length;
+            
+            const totalInventory = products.reduce((sum, product) => sum + product.stock, 0);
+            document.getElementById('totalInventory').textContent = totalInventory.toLocaleString();
+            
+            const today = new Date().toISOString().split('T')[0];
+            const todaySales = sales.filter(sale => sale.date === today)
+                .reduce((sum, sale) => sum + sale.quantity, 0);
+            document.getElementById('todaySales').textContent = todaySales;
+            
+            const lowStockItems = products.filter(product => product.stock <= product.safeStock).length;
+            document.getElementById('lowStockItems').textContent = lowStockItems;
+            
+            // 更新热销产品
+            updateTopProducts();
+        }
+        
+        // 更新热销产品
+        function updateTopProducts() {
+            const productSales = {};
+            
+            // 计算每个产品的销量
+            sales.forEach(sale => {
+                if (!productSales[sale.productId]) {
+                    productSales[sale.productId] = {
+                        name: sale.productName,
+                        quantity: 0
+                    };
+                }
+                productSales[sale.productId].quantity += sale.quantity;
+            });
+            
+            // 排序并取前5名
+            const topProducts = Object.values(productSales)
+                .sort((a, b) => b.quantity - a.quantity)
+                .slice(0, 5);
+            
+            const container = document.getElementById('topProducts');
+            container.innerHTML = topProducts.map((product, index) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+                    <div>
+                        <div style="font-weight: 500;">${index + 1}. ${product.name}</div>
+                    </div>
+                    <div style="font-weight: bold; color: var(--primary-color);">${product.quantity}</div>
+                </div>
+            `).join('');
+        }
+        
+        // 更新产品表格
+        function updateProductsTable() {
+            const tbody = document.getElementById('productsTableBody');
+            const searchTerm = document.getElementById('productSearch')?.value.toLowerCase() || '';
+            const categoryFilter = document.getElementById('categoryFilter')?.value || '';
+            
+            let filteredProducts = products.filter(product => {
+                const matchesSearch = product.name.toLowerCase().includes(searchTerm) || 
+                                    product.sku.toLowerCase().includes(searchTerm);
+                const matchesCategory = !categoryFilter || product.category === categoryFilter;
+                return matchesSearch && matchesCategory;
+            });
+            
+            tbody.innerHTML = filteredProducts.map(product => `
+                <tr>
+                    <td>${product.sku}</td>
+                    <td>${product.name}</td>
+                    <td>${product.category}</td>
+                    <td>${product.stock}</td>
+                    <td>¥${product.price}</td>
+                    <td>
+                        <span class="badge ${getStockStatusClass(product)}">
+                            ${getStockStatusText(product)}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editProduct(${product.id})">编辑</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteProduct(${product.id})">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // 更新产品计数
+            document.getElementById('productCount').textContent = `${filteredProducts.length} 个产品`;
+        }
+        
+        // 更新库存表格
+        function updateInventoryTable() {
+            const tbody = document.getElementById('inventoryTableBody');
+            
+            tbody.innerHTML = products.map(product => `
+                <tr>
+                    <td>${product.name}</td>
+                    <td>${product.stock}</td>
+                    <td>${product.safeStock}</td>
+                    <td>0</td>
+                    <td>
+                        <span class="badge ${getStockStatusClass(product)}">
+                            ${getStockStatusText(product)}
+                        </span>
+                    </td>
+                    <td>${new Date().toLocaleDateString()}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="adjustStock(${product.id})">调整</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // 获取库存状态样式
+        function getStockStatusClass(product) {
+            if (product.stock <= product.safeStock) {
+                return 'badge-danger';
+            } else if (product.stock <= product.safeStock * 2) {
+                return 'badge-warning';
+            }
+            return 'badge-success';
+        }
+        
+        // 获取库存状态文本
+        function getStockStatusText(product) {
+            if (product.stock <= product.safeStock) {
+                return '库存不足';
+            } else if (product.stock <= product.safeStock * 2) {
+                return '库存偏低';
+            }
+            return '库存充足';
+        }
+        
+        // 初始化图表
+        function initCharts() {
+            // 销量趋势图表
+            const salesCtx = document.getElementById('salesChart');
+            if (salesCtx) {
+                salesChart = new Chart(salesCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: '销量',
+                            data: [],
+                            borderColor: 'rgb(64, 158, 255)',
+                            backgroundColor: 'rgba(64, 158, 255, 0.1)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // 销量分析图表
+            const salesAnalysisCtx = document.getElementById('salesAnalysisChart');
+            if (salesAnalysisCtx) {
+                salesAnalysisChart = new Chart(salesAnalysisCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: '销量',
+                            data: [],
+                            backgroundColor: 'rgba(64, 158, 255, 0.8)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
+        }
+        
+        // 更新销量图表
+        function updateSalesChart() {
+            if (!salesChart) return;
+            
+            const period = parseInt(document.getElementById('salesPeriod')?.value || 7);
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - period);
+            
+            // 按日期聚合销量数据
+            const dailySales = {};
+            sales.forEach(sale => {
+                const saleDate = new Date(sale.date);
+                if (saleDate >= startDate && saleDate <= endDate) {
+                    const dateStr = sale.date;
+                    if (!dailySales[dateStr]) {
+                        dailySales[dateStr] = 0;
+                    }
+                    dailySales[dateStr] += sale.quantity;
+                }
+            });
+            
+            // 生成标签和数据
+            const labels = [];
+            const data = [];
+            
+            for (let i = period - 1; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                const displayDate = date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+                
+                labels.push(displayDate);
+                data.push(dailySales[dateStr] || 0);
+            }
+            
+            salesChart.data.labels = labels;
+            salesChart.data.datasets[0].data = data;
+            salesChart.update();
+        }
+        
+        // 页面切换
+        function switchPage(page) {
+            // 隐藏所有页面
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(p => p.classList.add('hidden'));
+            
+            // 显示目标页面
+            const targetPage = document.getElementById(page + 'Page');
+            if (targetPage) {
+                targetPage.classList.remove('hidden');
+            }
+            
+            // 更新导航状态
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => link.classList.remove('active'));
+            
+            const activeLink = document.querySelector(`[data-page="${page}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+            
+            // 更新页面标题
+            document.getElementById('pageTitle').textContent = pageTitles[page] || '海外仓ERP系统';
+            currentPage = page;
+            
+            // 页面特定的初始化
+            if (page === 'sales' && salesAnalysisChart) {
+                updateSalesAnalysisChart();
+            }
+        }
+        
+        // 更新销量分析图表
+        function updateSalesAnalysisChart() {
+            if (!salesAnalysisChart) return;
+            
+            const productSales = {};
+            
+            sales.forEach(sale => {
+                if (!productSales[sale.productName]) {
+                    productSales[sale.productName] = 0;
+                }
+                productSales[sale.productName] += sale.quantity;
+            });
+            
+            const sortedProducts = Object.entries(productSales)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 10);
+            
+            salesAnalysisChart.data.labels = sortedProducts.map(([name]) => name);
+            salesAnalysisChart.data.datasets[0].data = sortedProducts.map(([,quantity]) => quantity);
+            salesAnalysisChart.update();
+        }
+        
+        // 侧边栏切换
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebarCollapsed = !sidebarCollapsed;
+            
+            if (sidebarCollapsed) {
+                sidebar.classList.add('collapsed');
+            } else {
+                sidebar.classList.remove('collapsed');
+            }
+        }
+        
+        // 主题切换
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            
+            const themeToggle = document.getElementById('themeToggle');
+            themeToggle.textContent = currentTheme === 'light' ? '🌙' : '☀️';
+            
+            saveSettings();
+        }
+        
+        // 显示模态框
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('active');
+            }
+        }
+        
+        // 关闭模态框
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+        
+        // 显示添加产品模态框
+        function showAddProductModal() {
+            showModal('addProductModal');
+        }
+        
+        // 添加产品
+        function addProduct() {
+            const form = document.getElementById('addProductForm');
+            const formData = new FormData(form);
+            
+            const product = {
+                id: Date.now(),
+                sku: formData.get('sku'),
+                name: formData.get('name'),
+                category: formData.get('category'),
+                price: parseFloat(formData.get('price')) || 0,
+                stock: parseInt(formData.get('stock')) || 0,
+                safeStock: parseInt(formData.get('safeStock')) || 10,
+                status: 'active',
+                description: formData.get('description') || ''
+            };
+            
+            // 验证SKU唯一性
+            if (products.some(p => p.sku === product.sku)) {
+                showNotification('SKU已存在，请使用不同的SKU', 'error');
+                return;
+            }
+            
+            products.push(product);
+            saveData();
+            updateProductsTable();
+            updateDashboard();
+            
+            closeModal('addProductModal');
+            form.reset();
+            
+            showNotification('产品添加成功', 'success');
+        }
+        
+        // 编辑产品
+        function editProduct(id) {
+            const product = products.find(p => p.id === id);
+            if (product) {
+                showNotification('编辑功能开发中...', 'info');
+            }
+        }
+        
+        // 删除产品
+        function deleteProduct(id) {
+            if (confirm('确定要删除这个产品吗？')) {
+                products = products.filter(p => p.id !== id);
+                saveData();
+                updateProductsTable();
+                updateDashboard();
+                showNotification('产品删除成功', 'success');
+            }
+        }
+        
+        // 筛选产品
+        function filterProducts() {
+            updateProductsTable();
+        }
+        
+        // 筛选库存
+        function filterInventory() {
+            updateInventoryTable();
+        }
+        
+        // 显示导入模态框
+        function showImportModal() {
+            showModal('importModal');
+        }
+        
+        // 处理文件选择
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+        
+        // 处理文件
+        function handleFile(file) {
+            if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+                showNotification('请选择CSV文件', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csv = e.target.result;
+                parseCSV(csv);
+            };
+            reader.readAsText(file);
+        }
+        
+        // 解析CSV
+        function parseCSV(csv) {
+            const lines = csv.split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+            
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim()) {
+                    const values = lines[i].split(',').map(v => v.trim());
+                    const row = {};
+                    headers.forEach((header, index) => {
+                        row[header] = values[index] || '';
+                    });
+                    data.push(row);
+                }
+            }
+            
+            showImportPreview(data);
+        }
+        
+        // 显示导入预览
+        function showImportPreview(data) {
+            const preview = document.getElementById('importPreview');
+            const table = document.getElementById('previewTable');
+            
+            if (data.length === 0) {
+                showNotification('CSV文件为空或格式不正确', 'error');
+                return;
+            }
+            
+            const headers = Object.keys(data[0]);
+            const tableHTML = `
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                ${headers.map(h => `<th>${h}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.slice(0, 5).map(row => `
+                                <tr>
+                                    ${headers.map(h => `<td>${row[h]}</td>`).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <p style="margin-top: 10px; color: var(--text-secondary);">
+                    显示前5行，共${data.length}行数据
+                </p>
+            `;
+            
+            table.innerHTML = tableHTML;
+            preview.classList.remove('hidden');
+            
+            document.getElementById('confirmImport').disabled = false;
+            window.importData = data; // 临时存储导入数据
+        }
+        
+        // 确认导入
+        function confirmImport() {
+            if (!window.importData) return;
+            
+            let imported = 0;
+            let skipped = 0;
+            
+            window.importData.forEach(row => {
+                // 检查必需字段
+                if (!row.sku || !row.name) {
+                    skipped++;
+                    return;
+                }
+                
+                // 检查SKU是否已存在
+                if (products.some(p => p.sku === row.sku)) {
+                    skipped++;
+                    return;
+                }
+                
+                const product = {
+                    id: Date.now() + Math.random(),
+                    sku: row.sku,
+                    name: row.name,
+                    category: row.category || '未分类',
+                    price: parseFloat(row.price) || 0,
+                    stock: parseInt(row.stock) || 0,
+                    safeStock: parseInt(row.safeStock) || 10,
+                    status: 'active',
+                    description: row.description || ''
+                };
+                
+                products.push(product);
+                imported++;
+            });
+            
+            saveData();
+            updateProductsTable();
+            updateDashboard();
+            
+            closeModal('importModal');
+            
+            showNotification(`导入完成：${imported}个产品成功，${skipped}个跳过`, 'success');
+            
+            // 清理临时数据
+            delete window.importData;
+            document.getElementById('importPreview').classList.add('hidden');
+            document.getElementById('confirmImport').disabled = true;
+        }
+        
+        // 导出产品
+        function exportProducts() {
+            const csv = convertToCSV(products);
+            downloadCSV(csv, 'products.csv');
+            showNotification('产品数据导出成功', 'success');
+        }
+        
+        // 导出所有数据
+        function exportAllData() {
+            const allData = {
+                products,
+                sales,
+                exportDate: new Date().toISOString()
+            };
+            
+            const json = JSON.stringify(allData, null, 2);
+            downloadJSON(json, 'warehouse_erp_data.json');
+            showNotification('所有数据导出成功', 'success');
+        }
+        
+        // 转换为CSV
+        function convertToCSV(data) {
+            if (data.length === 0) return '';
+            
+            const headers = Object.keys(data[0]);
+            const csvContent = [
+                headers.join(','),
+                ...data.map(row => headers.map(header => row[header]).join(','))
+            ].join('\n');
+            
+            return csvContent;
+        }
+        
+        // 下载CSV
+        function downloadCSV(csv, filename) {
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+        
+        // 下载JSON
+        function downloadJSON(json, filename) {
+            const blob = new Blob([json], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+        
+        // 保存数据到本地存储
+        function saveData() {
+            localStorage.setItem('warehouse_erp_products', JSON.stringify(products));
+            localStorage.setItem('warehouse_erp_sales', JSON.stringify(sales));
+            localStorage.setItem('warehouse_erp_suppliers', JSON.stringify(suppliers));
+            localStorage.setItem('warehouse_erp_orders', JSON.stringify(orders));
+        }
+        
+        // 从本地存储加载数据
+        function loadData() {
+            try {
+                const savedProducts = localStorage.getItem('warehouse_erp_products');
+                if (savedProducts) {
+                    products = JSON.parse(savedProducts);
+                }
+                
+                const savedSales = localStorage.getItem('warehouse_erp_sales');
+                if (savedSales) {
+                    sales = JSON.parse(savedSales);
+                }
+                
+                const savedSuppliers = localStorage.getItem('warehouse_erp_suppliers');
+                if (savedSuppliers) {
+                    suppliers = JSON.parse(savedSuppliers);
+                }
+                
+                const savedOrders = localStorage.getItem('warehouse_erp_orders');
+                if (savedOrders) {
+                    orders = JSON.parse(savedOrders);
+                }
+            } catch (error) {
+                console.error('加载数据失败:', error);
+            }
+        }
+        
+        // 保存设置
+        function saveSettings() {
+            const settings = {
+                theme: currentTheme,
+                language: currentLanguage,
+                sidebarCollapsed
+            };
+            localStorage.setItem('warehouse_erp_settings', JSON.stringify(settings));
+        }
+        
+        // 加载设置
+        function loadSettings() {
+            try {
+                const savedSettings = localStorage.getItem('warehouse_erp_settings');
+                if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+                    currentTheme = settings.theme || 'light';
+                    currentLanguage = settings.language || 'zh-CN';
+                    sidebarCollapsed = settings.sidebarCollapsed || false;
+                    
+                    // 应用设置
+                    document.documentElement.setAttribute('data-theme', currentTheme);
+                    const themeToggle = document.getElementById('themeToggle');
+                    if (themeToggle) {
+                        themeToggle.textContent = currentTheme === 'light' ? '🌙' : '☀️';
+                    }
+                }
+            } catch (error) {
+                console.error('加载设置失败:', error);
+            }
+        }
+        
+        // 清空所有数据
+        function clearAllData() {
+            if (confirm('确定要清空所有数据吗？此操作不可恢复！')) {
+                localStorage.removeItem('warehouse_erp_products');
+                localStorage.removeItem('warehouse_erp_sales');
+                localStorage.removeItem('warehouse_erp_suppliers');
+                localStorage.removeItem('warehouse_erp_orders');
+                
+                products = [];
+                sales = [];
+                suppliers = [];
+                orders = [];
+                
+                updateDashboard();
+                updateProductsTable();
+                updateInventoryTable();
+                
+                showNotification('所有数据已清空', 'success');
+            }
+        }
+        
+        // 显示通知
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // 显示动画
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            // 自动隐藏
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        // 显示用户菜单
+        function showUserMenu() {
+            if (confirm('确定要退出登录吗？')) {
+                logout();
+            }
+        }
+        
+        // 退出登录
+        function logout() {
+            currentUser = null;
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('loginPage').classList.remove('hidden');
+            showNotification('已退出登录', 'info');
+        }
+        
+        // 其他功能函数（占位符）
+        function showStockAdjustModal() {
+            showNotification('库存调整功能开发中...', 'info');
+        }
+        
+        function showLowStockReport() {
+            showNotification('库存预警功能开发中...', 'info');
+        }
+        
+        function showAddSupplierModal() {
+            showNotification('供应商管理功能开发中...', 'info');
+        }
+        
+        function showCreateOrderModal() {
+            showNotification('采购订单功能开发中...', 'info');
+        }
+        
+        function showInventoryCheck() {
+            showNotification('库存盘点功能开发中...', 'info');
+        }
+        
+        function adjustStock(id) {
+            showNotification('库存调整功能开发中...', 'info');
+        }
+        
+        function exportData() {
+            exportAllData();
+        }
+        
+        // 页面加载完成
+        window.addEventListener('load', function() {
+            console.log('🚀 海外仓ERP系统增强版加载完成');
+            console.log('📊 系统状态: 正常运行');
+            console.log('🌐 访问域名:', window.location.hostname);
+        });
+    </script>
+</body>
+</html>
