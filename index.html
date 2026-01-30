@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>海外仓ERP管理系统</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <meta name="description" content="专业的海外仓库存管理ERP系统">
+    <meta name="keywords" content="海外仓,ERP,库存管理,跨境电商">
+    
+    <!-- PWA支持 -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#409EFF">
+    
+    <!-- 预加载关键资源 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    
+    <!-- Element Plus CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/element-plus@2.4.2/dist/index.css">
+    
+    <style>
+        /* 加载动画 */
+        .loading-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .loading-text {
+            color: white;
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 隐藏加载动画 */
+        .loading-container.hidden {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        /* 应用容器 */
+        #app {
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .el-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 加载动画 -->
+    <div id="loading" class="loading-container">
+        <div style="text-align: center;">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">正在加载海外仓ERP系统...</div>
+        </div>
+    </div>
+
+    <!-- 应用容器 -->
+    <div id="app">
+        <!-- Vue应用将在这里渲染 -->
+    </div>
+
+    <!-- 引入依赖库 -->
+    <script src="https://unpkg.com/vue@3.3.8/dist/vue.global.prod.js"></script>
+    <script src="https://unpkg.com/vue-router@4.2.5/dist/vue-router.global.prod.js"></script>
+    <script src="https://unpkg.com/pinia@2.1.7/dist/pinia.iife.prod.js"></script>
+    <script src="https://unpkg.com/element-plus@2.4.2/dist/index.full.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.38.0/dist/umd/supabase.js"></script>
+    <script src="https://unpkg.com/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://unpkg.com/dayjs@1.11.10/dayjs.min.js"></script>
+
+    <script type="module">
+        const { createApp, ref, reactive, computed, onMounted, nextTick } = Vue;
+        const { createRouter, createWebHistory } = VueRouter;
+        const { createPinia, defineStore } = Pinia;
+        const { ElMessage, ElMessageBox, ElNotification } = ElementPlus;
+
+        // Supabase配置
+        const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
+        const supabaseKey = import.meta.env?.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+        
+        let supabase;
+        try {
+            supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        } catch (error) {
+            console.warn('Supabase配置未完成，使用演示模式');
+            supabase = null;
+        }
+
+        // 全局状态管理
+        const useAppStore = defineStore('app', () => {
+            const user = ref(null);
+            const loading = ref(false);
+            const sidebarCollapsed = ref(false);
+            const currentPage = ref('dashboard');
+            
+            // 模拟数据
+            const mockData = reactive({
+                products: [
+                    { id: 1, sku: 'SKU001', name: '无线蓝牙耳机', category: '电子产品', stock: 150, price: 299 },
+                    { id: 2, sku: 'SKU002', name: '智能手表', category: '电子产品', stock: 80, price: 899 },
+                    { id: 3, sku: 'SKU003', name: '便携充电宝', category: '电子产品', stock: 200, price: 129 }
+                ],
+                warehouses: [
+                    { id: 1, name: '美国西海岸仓', location: '洛杉矶', status: 'active' },
+                    { id: 2, name: '美国东海岸仓', location: '纽约', status: 'active' },
+                    { id: 3, name: '欧洲仓', location: '德国汉堡', status: 'active' }
+                ],
+                inventory: [
+                    { productId: 1, warehouseId: 1, quantity: 50, reserved: 10 },
+                    { productId: 1, warehouseId: 2, quantity: 60, reserved: 5 },
+                    { productId: 2, warehouseId: 1, quantity: 30, reserved: 8 },
+                    { productId: 3, warehouseId: 3, quantity: 100, reserved: 20 }
+                ],
+                salesData: [
+                    { date: '2026-01-20', productId: 1, quantity: 15, revenue: 4485 },
+                    { date: '2026-01-21', productId: 1, quantity: 12, revenue: 3588 },
+                    { date: '2026-01-22', productId: 2, quantity: 8, revenue: 7192 },
+                    { date: '2026-01-23', productId: 3, quantity: 25, revenue: 3225 }
+                ]
+            });
+
+            const login = async (email, password) => {
+                loading.value = true;
+                try {
+                    if (supabase) {
+                        const { data, error } = await supabase.auth.signInWithPassword({
+                            email,
+                            password
+                        });
+                        if (error) throw error;
+                        user.value = data.user;
+                    } else {
+                        // 演示模式
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        user.value = { email, id: 'demo-user' };
+                    }
+                    ElMessage.success('登录成功');
+                    return true;
+                } catch (error) {
+                    ElMessage.error(error.message || '登录失败');
+                    return false;
+                } finally {
+                    loading.value = false;
+                }
+            };
+
+            const logout = async () => {
+                if (supabase) {
+                    await supabase.auth.signOut();
+                }
+                user.value = null;
+                ElMessage.success('已退出登录');
+            };
+
+            return {
+                user,
+                loading,
+                sidebarCollapsed,
+                currentPage,
+                mockData,
+                login,
+                logout
+            };
+        });
+
+        // 路由配置
+        const routes = [
+            { path: '/', redirect: '/dashboard' },
+            { path: '/dashboard', name: 'dashboard', component: { template: '<DashboardView />' } },
+            { path: '/products', name: 'products', component: { template: '<ProductsView />' } },
+            { path: '/inventory', name: 'inventory', component: { template: '<InventoryView />' } },
+            { path: '/sales', name: 'sales', component: { template: '<SalesView />' } },
+            { path: '/suppliers', name: 'suppliers', component: { template: '<SuppliersView />' } },
+            { path: '/orders', name: 'orders', component: { template: '<OrdersView />' } },
+            { path: '/settings', name: 'settings', component: { template: '<SettingsView />' } }
+        ];
+
+        const router = createRouter({
+            history: createWebHistory(),
+            routes
+        });
+
+        // 主应用组件
+        const App = {
+            template: `
+                <div v-if="!store.user" class="login-container">
+                    <LoginForm />
+                </div>
+                <div v-else class="app-container">
+                    <el-container style="height: 100vh;">
+                        <el-aside :width="store.sidebarCollapsed ? '64px' : '200px'" class="sidebar">
+                            <Sidebar />
+                        </el-aside>
+                        <el-container>
+                            <el-header class="header">
+                                <Header />
+                            </el-header>
+                            <el-main class="main-content">
+                                <router-view />
+                            </el-main>
+                        </el-container>
+                    </el-container>
+                </div>
+            `,
+            setup() {
+                const store = useAppStore();
+                
+                onMounted(() => {
+                    // 隐藏加载动画
+                    setTimeout(() => {
+                        const loading = document.getElementById('loading');
+                        if (loading) {
+                            loading.classList.add('hidden');
+                            setTimeout(() => loading.remove(), 500);
+                        }
+                    }, 1000);
+                });
+
+                return { store };
+            }
+        };
+
+        // 登录组件
+        const LoginForm = {
+            template: `
+                <div class="login-wrapper">
+                    <div class="login-box">
+                        <div class="login-header">
+                            <h1>海外仓ERP系统</h1>
+                            <p>专业的库存管理解决方案</p>
+                        </div>
+                        <el-form :model="form" :rules="rules" ref="formRef" class="login-form">
+                            <el-form-item prop="email">
+                                <el-input
+                                    v-model="form.email"
+                                    placeholder="请输入邮箱"
+                                    prefix-icon="User"
+                                    size="large"
+                                />
+                            </el-form-item>
+                            <el-form-item prop="password">
+                                <el-input
+                                    v-model="form.password"
+                                    type="password"
+                                    placeholder="请输入密码"
+                                    prefix-icon="Lock"
+                                    size="large"
+                                    show-password
+                                />
+                            </el-form-item>
+                            <el-form-item>
+                                <el-button
+                                    type="primary"
+                                    size="large"
+                                    style="width: 100%;"
+                                    :loading="store.loading"
+                                    @click="handleLogin"
+                                >
+                                    登录
+                                </el-button>
+                            </el-form-item>
+                        </el-form>
+                        <div class="demo-info">
+                            <el-alert
+                                title="演示账号"
+                                description="邮箱: demo@example.com | 密码: 任意密码"
+                                type="info"
+                                :closable="false"
+                            />
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const store = useAppStore();
+                const formRef = ref();
+                const form = reactive({
+                    email: 'demo@example.com',
+                    password: 'demo123'
+                });
+                
+                const rules = {
+                    email: [
+                        { required: true, message: '请输入邮箱', trigger: 'blur' },
+                        { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
+                    ],
+                    password: [
+                        { required: true, message: '请输入密码', trigger: 'blur' }
+                    ]
+                };
+
+                const handleLogin = async () => {
+                    try {
+                        await formRef.value.validate();
+                        await store.login(form.email, form.password);
+                    } catch (error) {
+                        console.error('登录验证失败:', error);
+                    }
+                };
+
+                return {
+                    store,
+                    form,
+                    rules,
+                    formRef,
+                    handleLogin
+                };
+            }
+        };
+
+        // 侧边栏组件
+        const Sidebar = {
+            template: `
+                <div class="sidebar-content">
+                    <div class="logo">
+                        <i class="el-icon-box" v-if="!store.sidebarCollapsed"></i>
+                        <span v-if="!store.sidebarCollapsed">ERP系统</span>
+                    </div>
+                    <el-menu
+                        :default-active="$route.path"
+                        :collapse="store.sidebarCollapsed"
+                        router
+                        background-color="#304156"
+                        text-color="#bfcbd9"
+                        active-text-color="#409EFF"
+                    >
+                        <el-menu-item index="/dashboard">
+                            <el-icon><House /></el-icon>
+                            <span>仪表盘</span>
+                        </el-menu-item>
+                        <el-menu-item index="/products">
+                            <el-icon><Box /></el-icon>
+                            <span>产品管理</span>
+                        </el-menu-item>
+                        <el-menu-item index="/inventory">
+                            <el-icon><List /></el-icon>
+                            <span>库存管理</span>
+                        </el-menu-item>
+                        <el-menu-item index="/sales">
+                            <el-icon><TrendCharts /></el-icon>
+                            <span>销量分析</span>
+                        </el-menu-item>
+                        <el-menu-item index="/suppliers">
+                            <el-icon><OfficeBuilding /></el-icon>
+                            <span>供应商</span>
+                        </el-menu-item>
+                        <el-menu-item index="/orders">
+                            <el-icon><Document /></el-icon>
+                            <span>采购订单</span>
+                        </el-menu-item>
+                        <el-menu-item index="/settings">
+                            <el-icon><Setting /></el-icon>
+                            <span>系统设置</span>
+                        </el-menu-item>
+                    </el-menu>
+                </div>
+            `,
+            setup() {
+                const store = useAppStore();
+                return { store };
+            }
+        };
+
+        // 头部组件
+        const Header = {
+            template: `
+                <div class="header-content">
+                    <div class="header-left">
+                        <el-button
+                            type="text"
+                            @click="store.sidebarCollapsed = !store.sidebarCollapsed"
+                        >
+                            <el-icon><Fold v-if="!store.sidebarCollapsed" /><Expand v-else /></el-icon>
+                        </el-button>
+                        <span class="page-title">{{ pageTitle }}</span>
+                    </div>
+                    <div class="header-right">
+                        <el-dropdown @command="handleCommand">
+                            <span class="user-info">
+                                <el-icon><User /></el-icon>
+                                {{ store.user?.email }}
+                                <el-icon><ArrowDown /></el-icon>
+                            </span>
+                            <template #dropdown>
+                                <el-dropdown-menu>
+                                    <el-dropdown-item command="profile">个人资料</el-dropdown-item>
+                                    <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+                                </el-dropdown-menu>
+                            </template>
+                        </el-dropdown>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const store = useAppStore();
+                const route = useRoute();
+                
+                const pageTitle = computed(() => {
+                    const titles = {
+                        '/dashboard': '仪表盘',
+                        '/products': '产品管理',
+                        '/inventory': '库存管理',
+                        '/sales': '销量分析',
+                        '/suppliers': '供应商管理',
+                        '/orders': '采购订单',
+                        '/settings': '系统设置'
+                    };
+                    return titles[route.path] || '海外仓ERP系统';
+                });
+
+                const handleCommand = (command) => {
+                    if (command === 'logout') {
+                        store.logout();
+                    } else if (command === 'profile') {
+                        ElMessage.info('个人资料功能开发中...');
+                    }
+                };
+
+                return {
+                    store,
+                    pageTitle,
+                    handleCommand
+                };
+            }
+        };
+
+        // 仪表盘组件
+        const DashboardView = {
+            template: `
+                <div class="dashboard">
+                    <el-row :gutter="20" class="stats-row">
+                        <el-col :xs="12" :sm="6" v-for="stat in stats" :key="stat.title">
+                            <el-card class="stat-card">
+                                <div class="stat-content">
+                                    <div class="stat-icon" :style="{ backgroundColor: stat.color }">
+                                        <el-icon><component :is="stat.icon" /></el-icon>
+                                    </div>
+                                    <div class="stat-info">
+                                        <div class="stat-value">{{ stat.value }}</div>
+                                        <div class="stat-title">{{ stat.title }}</div>
+                                    </div>
+                                </div>
+                            </el-card>
+                        </el-col>
+                    </el-row>
+                    
+                    <el-row :gutter="20" class="charts-row">
+                        <el-col :xs="24" :lg="12">
+                            <el-card title="销量趋势">
+                                <div ref="salesChart" style="height: 300px;"></div>
+                            </el-card>
+                        </el-col>
+                        <el-col :xs="24" :lg="12">
+                            <el-card title="库存预警">
+                                <div class="inventory-alerts">
+                                    <div v-for="alert in inventoryAlerts" :key="alert.id" class="alert-item">
+                                        <el-tag :type="alert.type" size="small">{{ alert.level }}</el-tag>
+                                        <span class="product-name">{{ alert.product }}</span>
+                                        <span class="stock-info">库存: {{ alert.stock }}</span>
+                                    </div>
+                                </div>
+                            </el-card>
+                        </el-col>
+                    </el-row>
+                </div>
+            `,
+            setup() {
+                const store = useAppStore();
+                const salesChart = ref();
+                
+                const stats = ref([
+                    { title: '总产品数', value: '156', icon: 'Box', color: '#409EFF' },
+                    { title: '总库存', value: '12,580', icon: 'List', color: '#67C23A' },
+                    { title: '今日销量', value: '89', icon: 'TrendCharts', color: '#E6A23C' },
+                    { title: '预警商品', value: '5', icon: 'Warning', color: '#F56C6C' }
+                ]);
+                
+                const inventoryAlerts = ref([
+                    { id: 1, product: '无线蓝牙耳机', stock: 15, level: '低库存', type: 'warning' },
+                    { id: 2, product: '智能手表', stock: 8, level: '缺货预警', type: 'danger' },
+                    { id: 3, product: '便携充电宝', stock: 25, level: '正常', type: 'success' }
+                ]);
+
+                onMounted(() => {
+                    // 初始化销量图表
+                    if (salesChart.value && window.echarts) {
+                        const chart = window.echarts.init(salesChart.value);
+                        const option = {
+                            tooltip: { trigger: 'axis' },
+                            xAxis: {
+                                type: 'category',
+                                data: ['1月20日', '1月21日', '1月22日', '1月23日', '1月24日', '1月25日', '1月26日']
+                            },
+                            yAxis: { type: 'value' },
+                            series: [{
+                                data: [150, 230, 224, 218, 135, 147, 260],
+                                type: 'line',
+                                smooth: true,
+                                itemStyle: { color: '#409EFF' }
+                            }]
+                        };
+                        chart.setOption(option);
+                    }
+                });
+
+                return {
+                    store,
+                    stats,
+                    inventoryAlerts,
+                    salesChart
+                };
+            }
+        };
+
+        // 产品管理组件
+        const ProductsView = {
+            template: `
+                <div class="products-view">
+                    <div class="toolbar">
+                        <el-button type="primary" @click="showAddDialog = true">
+                            <el-icon><Plus /></el-icon>
+                            添加产品
+                        </el-button>
+                        <el-button @click="handleImport">
+                            <el-icon><Upload /></el-icon>
+                            批量导入
+                        </el-button>
+                        <el-button @click="handleExport">
+                            <el-icon><Download /></el-icon>
+                            导出数据
+                        </el-button>
+                    </div>
+                    
+                    <el-table :data="store.mockData.products" style="width: 100%">
+                        <el-table-column prop="sku" label="SKU" width="120" />
+                        <el-table-column prop="name" label="产品名称" />
+                        <el-table-column prop="category" label="分类" width="120" />
+                        <el-table-column prop="stock" label="库存" width="100" />
+                        <el-table-column prop="price" label="价格" width="100">
+                            <template #default="scope">
+                                ¥{{ scope.row.price }}
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="操作" width="200">
+                            <template #default="scope">
+                                <el-button size="small" @click="editProduct(scope.row)">编辑</el-button>
+                                <el-button size="small" type="danger" @click="deleteProduct(scope.row)">删除</el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+
+                    <!-- 添加产品对话框 -->
+                    <el-dialog v-model="showAddDialog" title="添加产品" width="500px">
+                        <el-form :model="productForm" label-width="80px">
+                            <el-form-item label="SKU">
+                                <el-input v-model="productForm.sku" />
+                            </el-form-item>
+                            <el-form-item label="产品名称">
+                                <el-input v-model="productForm.name" />
+                            </el-form-item>
+                            <el-form-item label="分类">
+                                <el-input v-model="productForm.category" />
+                            </el-form-item>
+                            <el-form-item label="价格">
+                                <el-input-number v-model="productForm.price" :min="0" />
+                            </el-form-item>
+                        </el-form>
+                        <template #footer>
+                            <el-button @click="showAddDialog = false">取消</el-button>
+                            <el-button type="primary" @click="addProduct">确定</el-button>
+                        </template>
+                    </el-dialog>
+                </div>
+            `,
+            setup() {
+                const store = useAppStore();
+                const showAddDialog = ref(false);
+                const productForm = reactive({
+                    sku: '',
+                    name: '',
+                    category: '',
+                    price: 0
+                });
+
+                const addProduct = () => {
+                    const newProduct = {
+                        id: Date.now(),
+                        ...productForm,
+                        stock: 0
+                    };
+                    store.mockData.products.push(newProduct);
+                    showAddDialog.value = false;
+                    Object.assign(productForm, { sku: '', name: '', category: '', price: 0 });
+                    ElMessage.success('产品添加成功');
+                };
+
+                const editProduct = (product) => {
+                    ElMessage.info('编辑功能开发中...');
+                };
+
+                const deleteProduct = (product) => {
+                    ElMessageBox.confirm('确定要删除这个产品吗？', '确认删除', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        const index = store.mockData.products.findIndex(p => p.id === product.id);
+                        if (index > -1) {
+                            store.mockData.products.splice(index, 1);
+                            ElMessage.success('删除成功');
+                        }
+                    });
+                };
+
+                const handleImport = () => {
+                    ElMessage.info('批量导入功能开发中...');
+                };
+
+                const handleExport = () => {
+                    ElMessage.info('导出功能开发中...');
+                };
+
+                return {
+                    store,
+                    showAddDialog,
+                    productForm,
+                    addProduct,
+                    editProduct,
+                    deleteProduct,
+                    handleImport,
+                    handleExport
+                };
+            }
+        };
+
+        // 其他视图组件（简化版）
+        const InventoryView = {
+            template: `
+                <div class="inventory-view">
+                    <h2>库存管理</h2>
+                    <p>库存管理功能正在开发中...</p>
+                </div>
+            `
+        };
+
+        const SalesView = {
+            template: `
+                <div class="sales-view">
+                    <h2>销量分析</h2>
+                    <p>销量分析功能正在开发中...</p>
+                </div>
+            `
+        };
+
+        const SuppliersView = {
+            template: `
+                <div class="suppliers-view">
+                    <h2>供应商管理</h2>
+                    <p>供应商管理功能正在开发中...</p>
+                </div>
+            `
+        };
+
+        const OrdersView = {
+            template: `
+                <div class="orders-view">
+                    <h2>采购订单</h2>
+                    <p>采购订单功能正在开发中...</p>
+                </div>
+            `
+        };
+
+        const SettingsView = {
+            template: `
+                <div class="settings-view">
+                    <el-card title="Supabase配置">
+                        <el-form :model="config" label-width="120px">
+                            <el-form-item label="项目URL">
+                                <el-input v-model="config.supabaseUrl" placeholder="https://your-project.supabase.co" />
+                            </el-form-item>
+                            <el-form-item label="API密钥">
+                                <el-input v-model="config.supabaseKey" type="password" placeholder="your-anon-key" />
+                            </el-form-item>
+                            <el-form-item>
+                                <el-button type="primary" @click="saveConfig">保存配置</el-button>
+                                <el-button @click="testConnection">测试连接</el-button>
+                            </el-form-item>
+                        </el-form>
+                    </el-card>
+                </div>
+            `,
+            setup() {
+                const config = reactive({
+                    supabaseUrl: supabaseUrl,
+                    supabaseKey: supabaseKey
+                });
+
+                const saveConfig = () => {
+                    localStorage.setItem('supabase_config', JSON.stringify(config));
+                    ElMessage.success('配置已保存');
+                };
+
+                const testConnection = () => {
+                    ElMessage.info('连接测试功能开发中...');
+                };
+
+                return {
+                    config,
+                    saveConfig,
+                    testConnection
+                };
+            }
+        };
+
+        // 创建应用
+        const app = createApp(App);
+        const pinia = createPinia();
+        
+        app.use(pinia);
+        app.use(router);
+        app.use(ElementPlus);
+        
+        // 注册组件
+        app.component('LoginForm', LoginForm);
+        app.component('Sidebar', Sidebar);
+        app.component('Header', Header);
+        app.component('DashboardView', DashboardView);
+        app.component('ProductsView', ProductsView);
+        app.component('InventoryView', InventoryView);
+        app.component('SalesView', SalesView);
+        app.component('SuppliersView', SuppliersView);
+        app.component('OrdersView', OrdersView);
+        app.component('SettingsView', SettingsView);
+
+        app.mount('#app');
+    </script>
+
+    <style>
+        /* 全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        /* 登录页面样式 */
+        .login-wrapper {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .demo-info {
+            margin-top: 20px;
+        }
+
+        /* 应用布局样式 */
+        .app-container {
+            height: 100vh;
+        }
+
+        .sidebar {
+            background-color: #304156;
+            transition: width 0.3s;
+        }
+
+        .sidebar-content {
+            height: 100%;
+        }
+
+        .logo {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            border-bottom: 1px solid #434a50;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e6e6e6;
+            padding: 0 20px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 100%;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .page-title {
+            margin-left: 15px;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+
+        .user-info:hover {
+            background-color: #f5f5f5;
+        }
+
+        .main-content {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        /* 仪表盘样式 */
+        .dashboard {
+            height: 100%;
+        }
+
+        .stats-row {
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            height: 100px;
+        }
+
+        .stat-content {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            margin-right: 15px;
+        }
+
+        .stat-info {
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-title {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .charts-row {
+            margin-top: 20px;
+        }
+
+        .inventory-alerts {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .alert-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .alert-item:last-child {
+            border-bottom: none;
+        }
+
+        .product-name {
+            flex: 1;
+            margin-left: 10px;
+        }
+
+        .stock-info {
+            color: #666;
+            font-size: 12px;
+        }
+
+        /* 产品管理样式 */
+        .products-view {
+            height: 100%;
+        }
+
+        .toolbar {
+            margin-bottom: 20px;
+        }
+
+        .toolbar .el-button {
+            margin-right: 10px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .header-content {
+                padding: 0 10px;
+            }
+            
+            .main-content {
+                padding: 10px;
+            }
+            
+            .stats-row .el-col {
+                margin-bottom: 10px;
+            }
+            
+            .login-box {
+                padding: 20px;
+            }
+        }
+    </style>
+</body>
+</html>

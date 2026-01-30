@@ -1,0 +1,30 @@
+{
+  "name": "warehouse-erp-vercel",
+  "version": "1.0.0",
+  "description": "海外仓ERP系统 - Vercel部署版",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
+    "vue": "^3.3.8",
+    "vue-router": "^4.2.5",
+    "pinia": "^2.1.7",
+    "element-plus": "^2.4.2",
+    "echarts": "^5.4.3",
+    "axios": "^1.6.0",
+    "dayjs": "^1.11.10"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.5.0",
+    "vite": "^5.0.0",
+    "vercel": "^32.5.0"
+  },
+  "keywords": ["erp", "warehouse", "inventory", "supabase", "vercel"],
+  "author": "Your Name",
+  "license": "MIT"
+}
